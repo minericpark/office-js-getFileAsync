@@ -5,6 +5,13 @@ function getSliceAsync(file, nextSlice, sliceCount, gotAllSlices, docdataSlices,
     if (sliceResult.status == Office.AsyncResultStatus.Succeeded) {
       if (!gotAllSlices) {
         // Failed to get all slices, no need to continue.
+        Word.run(async (context) => {
+          const paragraph = context.document.body.insertParagraph("Failed to get slices", Word.InsertLocation.end);
+
+          paragraph.font.color = "red";
+
+          await context.sync();
+        });
         return;
       }
 
@@ -14,15 +21,44 @@ function getSliceAsync(file, nextSlice, sliceCount, gotAllSlices, docdataSlices,
       docdataSlices[sliceResult.value.index] = sliceResult.value.data;
       if (++slicesReceived === sliceCount) {
         // All slices have been received.
-        file.closeAsync();
+        Word.run(async (context) => {
+          const paragraph = context.document.body.insertParagraph("Slices get!", Word.InsertLocation.end);
+
+          paragraph.font.color = "red";
+
+          await context.sync();
+        });
+        file.closeAsync((result) => {
+          Word.run(async (context) => {
+            const paragraph = context.document.body.insertParagraph("close in getSlice: " + JSON.stringify(result), Word.InsertLocation.end);
+
+            paragraph.font.color = "red";
+
+            await context.sync();
+          });
+        });
         onGotAllSlices(docdataSlices);
       } else {
         getSliceAsync(file, ++nextSlice, sliceCount, gotAllSlices, docdataSlices, slicesReceived);
       }
     } else {
       gotAllSlices = false;
-      file.closeAsync();
-      Word.showNotification("getSliceAsync Error:", sliceResult.error.message);
+      file.closeAsync((result) => {
+        Word.run(async (context) => {
+          const paragraph = context.document.body.insertParagraph("close in failed getSlice: " + JSON.stringify(result), Word.InsertLocation.end);
+
+          paragraph.font.color = "red";
+
+          await context.sync();
+        });
+      });
+      Word.run(async (context) => {
+        const paragraph = context.document.body.insertParagraph("Error in getSliceAsync", Word.InsertLocation.end);
+
+        paragraph.font.color = "red";
+
+        await context.sync();
+      });
     }
   });
 }
@@ -34,16 +70,14 @@ function onGotAllSlices(docdataSlices) {
   }
 
   let fileContent = String();
+  // Now all the file content is stored in 'fileContent' variable
   for (let j = 0; j < docdata.length; j++) {
     fileContent += String.fromCharCode(docdata[j]);
   }
 
-  // Now all the file content is stored in 'fileContent' variable,
-  // you can do something with it, such as print, fax...
-
   //Print file content
   Word.run(async (context) => {
-    const paragraph = context.document.body.insertParagraph(fileContent, Word.InsertLocation.end);
+    const paragraph = context.document.body.insertParagraph("fileContent: " + fileContent, Word.InsertLocation.end);
 
     paragraph.font.color = "red";
 
@@ -52,27 +86,25 @@ function onGotAllSlices(docdataSlices) {
 }
 
 function getDocumentAsPdf() {
-  // The following example gets the document in PDF format.
   Office.context.document.getFileAsync(Office.FileType.Pdf, { sliceSize: 65536 }, function (result) {
     if (result.status == Office.AsyncResultStatus.Succeeded) {
-      Word.run(async (context) => {
-        const paragraph = context.document.body.insertParagraph("step 1 success", Word.InsertLocation.end);
-
-        paragraph.font.color = "red";
-
-        await context.sync();
-      });
       const file = result.value;
       const sliceCount = file.sliceCount;
       const slicesReceived = 0,
         gotAllSlices = true,
         docdataSlices = [];
-      Word.showNotification("File size:" + file.size + " #Slices: " + sliceCount);
-      // Now, you can call getSliceAsync to download the files,
-      // as described in the previous code segment (compressed format).
+      //Print file details
+      Word.run(async (context) => {
+        const paragraph = context.document.body.insertParagraph("file: " + JSON.stringify(file), Word.InsertLocation.end);
+
+        paragraph.font.color = "red";
+
+        await context.sync();
+      });
+      //Assemble file slices into file object
       getSliceAsync(file, 0, sliceCount, gotAllSlices, docdataSlices, slicesReceived);
-      file.closeAsync();
     } else {
+      //Might have to close the file here
       Word.run(async (context) => {
         const paragraph = context.document.body.insertParagraph(JSON.stringify(result), Word.InsertLocation.end);
 
@@ -80,7 +112,6 @@ function getDocumentAsPdf() {
 
         await context.sync();
       });
-      Word.showNotification("Error:", result.error.message);
     }
   });
 }
