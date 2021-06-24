@@ -30,7 +30,10 @@ function getSliceAsync(file, nextSlice, sliceCount, gotAllSlices, docdataSlices,
         });
         file.closeAsync((result) => {
           Word.run(async (context) => {
-            const paragraph = context.document.body.insertParagraph("close in getSlice: " + JSON.stringify(result), Word.InsertLocation.end);
+            const paragraph = context.document.body.insertParagraph(
+              "close in getSlice: " + JSON.stringify(result),
+              Word.InsertLocation.end
+            );
 
             paragraph.font.color = "red";
 
@@ -45,7 +48,10 @@ function getSliceAsync(file, nextSlice, sliceCount, gotAllSlices, docdataSlices,
       gotAllSlices = false;
       file.closeAsync((result) => {
         Word.run(async (context) => {
-          const paragraph = context.document.body.insertParagraph("close in failed getSlice: " + JSON.stringify(result), Word.InsertLocation.end);
+          const paragraph = context.document.body.insertParagraph(
+            "close in failed getSlice: " + JSON.stringify(result),
+            Word.InsertLocation.end
+          );
 
           paragraph.font.color = "red";
 
@@ -75,9 +81,28 @@ function onGotAllSlices(docdataSlices) {
     fileContent += String.fromCharCode(docdata[j]);
   }
 
-  //Print file content
+  printFileContent(docdata);
+}
+
+function printFileContent(fileContent) {
+  let formData = new FormData();
+  let blob = new Blob([new Uint8Array(fileContent)], { type: "application/pdf" });
+  formData.append("file", blob);
   Word.run(async (context) => {
-    const paragraph = context.document.body.insertParagraph("fileContent: " + fileContent, Word.InsertLocation.end);
+    let object = {};
+    formData.forEach((value, key) => {
+      // Reflect.has in favor of: object.hasOwnProperty(key)
+      if (!Reflect.has(object, key)) {
+        object[key] = value;
+        return;
+      }
+      if (!Array.isArray(object[key])) {
+        object[key] = [object[key]];
+      }
+      object[key].push(value);
+    });
+    const json = JSON.stringify(object);
+    const paragraph = context.document.body.insertParagraph("fileContent: " + json, Word.InsertLocation.end);
 
     paragraph.font.color = "red";
 
@@ -95,7 +120,10 @@ function getDocumentAsPdf() {
         docdataSlices = [];
       //Print file details
       Word.run(async (context) => {
-        const paragraph = context.document.body.insertParagraph("file: " + JSON.stringify(file), Word.InsertLocation.end);
+        const paragraph = context.document.body.insertParagraph(
+          "file: " + JSON.stringify(file),
+          Word.InsertLocation.end
+        );
 
         paragraph.font.color = "red";
 
@@ -103,8 +131,20 @@ function getDocumentAsPdf() {
       });
       //Assemble file slices into file object
       getSliceAsync(file, 0, sliceCount, gotAllSlices, docdataSlices, slicesReceived);
+      //Removed closeAsync; led to more consistency, but seems necessary?
+      file.closeAsync((result) => {
+        Word.run(async (context) => {
+          const paragraph = context.document.body.insertParagraph(
+            "close in failed getDoc: " + JSON.stringify(result),
+            Word.InsertLocation.end
+          );
+
+          paragraph.font.color = "red";
+
+          await context.sync();
+        });
+      });
     } else {
-      //Might have to close the file here
       Word.run(async (context) => {
         const paragraph = context.document.body.insertParagraph(JSON.stringify(result), Word.InsertLocation.end);
 
