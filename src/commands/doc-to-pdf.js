@@ -38,6 +38,10 @@ function onGotAllSlices(docdataSlices) {
     fileContent += String.fromCharCode(docdata[j]);
   }
 
+  // Now all the file content is stored in 'fileContent' variable,
+  // you can do something with it, such as print, fax...
+
+  //Print file content
   Word.run(async (context) => {
     const paragraph = context.document.body.insertParagraph(fileContent, Word.InsertLocation.end);
 
@@ -45,9 +49,6 @@ function onGotAllSlices(docdataSlices) {
 
     await context.sync();
   });
-  // Print it
-  // Now all the file content is stored in 'fileContent' variable,
-  // you can do something with it, such as print, fax...
 }
 
 function getDocumentAsPdf() {

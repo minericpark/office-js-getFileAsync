@@ -41,10 +41,6 @@ function App(props) {
     });
   };
 
-  const exportToPdf = async () => {
-    return getDocumentAsPdf();
-  };
-
   if (!isOfficeInitialized) {
     return (
       <Progress title={title} logo="assets/logo-filled.png" message="Please sideload your addin to see app body." />
@@ -70,7 +66,7 @@ function App(props) {
           className="ms-welcome__action"
           buttonType={ButtonType.hero}
           iconProps={{ iconName: "ChevronRight" }}
-          onClick={exportToPdf}
+          onClick={getDocumentAsPdf}
         >
           Turn doc into PDF
         </Button>
