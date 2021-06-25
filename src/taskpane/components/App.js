@@ -35,7 +35,7 @@ function App(props) {
       const paragraph = context.document.body.insertParagraph("Test paragraph", Word.InsertLocation.end);
 
       // change the paragraph color to blue.
-      paragraph.font.color = "blue";
+      paragraph.font.color = "black";
 
       await context.sync();
     });

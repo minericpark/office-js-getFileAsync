@@ -24,7 +24,7 @@ function getSliceAsync(file, nextSlice, sliceCount, gotAllSlices, docdataSlices,
         Word.run(async (context) => {
           const paragraph = context.document.body.insertParagraph("Slices get!", Word.InsertLocation.end);
 
-          paragraph.font.color = "red";
+          paragraph.font.color = "green";
 
           await context.sync();
         });
@@ -35,7 +35,7 @@ function getSliceAsync(file, nextSlice, sliceCount, gotAllSlices, docdataSlices,
               Word.InsertLocation.end
             );
 
-            paragraph.font.color = "red";
+            paragraph.font.color = "green";
 
             await context.sync();
           });
@@ -75,12 +75,12 @@ function onGotAllSlices(docdataSlices) {
     docdata = docdata.concat(docdataSlices[i]);
   }
 
+  /** Can store file content with charCode (string), kind of not necessary for us
   let fileContent = String();
-  // Now all the file content is stored in 'fileContent' variable
   for (let j = 0; j < docdata.length; j++) {
     fileContent += String.fromCharCode(docdata[j]);
   }
-
+   */
   printFileContent(docdata);
 }
 
@@ -89,6 +89,7 @@ function printFileContent(fileContent) {
   let blob = new Blob([new Uint8Array(fileContent)], { type: "application/pdf" });
   formData.append("file", blob);
   Word.run(async (context) => {
+    //How to read formdata
     let object = {};
     formData.forEach((value, key) => {
       // Reflect.has in favor of: object.hasOwnProperty(key)
@@ -102,16 +103,30 @@ function printFileContent(fileContent) {
       object[key].push(value);
     });
     const json = JSON.stringify(object);
-    const paragraph = context.document.body.insertParagraph("fileContent: " + json, Word.InsertLocation.end);
+    const paragraph = context.document.body.insertParagraph("fileContent: " + blob, Word.InsertLocation.end);
 
-    paragraph.font.color = "red";
+    //How to read base64 file data
+    let reader = new FileReader();
+    reader.readAsDataURL(blob);
+    reader.onloadend = function () {
+      let base64data = reader.result.toString();
+      context.document.body.insertParagraph("base64: " + base64data.indexOf(",") + 1, Word.InsertLocation.end);
+      //Only works with Compressed (Docx) base64 code, does not work with PDF
+      context.document.body.insertFileFromBase64(
+        base64data.substr(base64data.indexOf(",") + 1),
+        Word.InsertLocation.end
+      );
+    };
+
+    paragraph.font.color = "green";
 
     await context.sync();
   });
 }
 
 function getDocumentAsPdf() {
-  Office.context.document.getFileAsync(Office.FileType.Pdf, { sliceSize: 65536 }, function (result) {
+  //Either use Compressed to get Docx data slices, or PDF to get PDF data slices
+  Office.context.document.getFileAsync(Office.FileType.Compressed, { sliceSize: 65536 }, function (result) {
     if (result.status == Office.AsyncResultStatus.Succeeded) {
       const file = result.value;
       const sliceCount = file.sliceCount;
@@ -125,7 +140,7 @@ function getDocumentAsPdf() {
           Word.InsertLocation.end
         );
 
-        paragraph.font.color = "red";
+        paragraph.font.color = "green";
 
         await context.sync();
       });
@@ -135,11 +150,11 @@ function getDocumentAsPdf() {
       file.closeAsync((result) => {
         Word.run(async (context) => {
           const paragraph = context.document.body.insertParagraph(
-            "close in failed getDoc: " + JSON.stringify(result),
+            "close in getDoc: " + JSON.stringify(result),
             Word.InsertLocation.end
           );
 
-          paragraph.font.color = "red";
+          paragraph.font.color = "green";
 
           await context.sync();
         });
